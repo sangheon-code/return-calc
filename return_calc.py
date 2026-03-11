@@ -214,6 +214,82 @@ class Portfolio:
             return 0.0
         return round((self.net_profit / denominator) * 100, 4)
 
+    # ── 타임라인 (시간순 이벤트 + 누적 수익률) ──
+
+    def timeline(self) -> list[dict]:
+        """거래와 입출금을 시간순으로 합치고 각 시점의 누적 수익률을 계산"""
+        events: list[dict] = []
+
+        for i, t in enumerate(self.trades):
+            if t.is_closed and t.exit_time:
+                events.append({
+                    "time": t.exit_time,
+                    "type": "거래(마감)",
+                    "desc": f"{t.asset} {t.trade_type.value.upper()} {t.leverage}x",
+                    "detail": f"매수 {t.entry_price:g} → 매도 {t.exit_price:g} / 수량 {t.quantity:g}",
+                    "amount": t.pnl_with_fee,
+                    "fee": t.fee,
+                    "source": "trade",
+                    "index": i,
+                })
+            else:
+                events.append({
+                    "time": t.entry_time,
+                    "type": "거래(진행중)",
+                    "desc": f"{t.asset} {t.trade_type.value.upper()} {t.leverage}x",
+                    "detail": f"매수 {t.entry_price:g} / 수량 {t.quantity:g}",
+                    "amount": 0.0,
+                    "fee": t.fee,
+                    "source": "trade",
+                    "index": i,
+                })
+
+        for i, cf in enumerate(self.cash_flows):
+            cf_type = "입금" if cf.amount > 0 else "출금"
+            events.append({
+                "time": cf.timestamp,
+                "type": cf_type,
+                "desc": cf.description or cf_type,
+                "detail": "",
+                "amount": cf.amount,
+                "fee": 0.0,
+                "source": "cashflow",
+                "index": i,
+            })
+
+        events.sort(key=lambda e: e["time"])
+
+        # 누적 수익률 계산: 각 이벤트 시점까지의 실현 PnL 기반
+        cum_realized_pnl = 0.0
+        cum_deposit = self.spot_sell_total   # 현물 매도액은 항상 포함
+        cum_withdrawal = self.spot_buy_total  # 현물 매수액은 항상 포함
+        cum_fees = 0.0
+
+        for ev in events:
+            if ev["source"] == "trade":
+                t = self.trades[ev["index"]]
+                if t.is_closed:
+                    cum_realized_pnl += t.pnl
+                cum_fees += t.fee
+            elif ev["source"] == "cashflow":
+                cf = self.cash_flows[ev["index"]]
+                if cf.amount > 0:
+                    cum_deposit += cf.amount
+                else:
+                    cum_withdrawal += abs(cf.amount)
+
+            # 해당 시점 추정 자산 = 초기 + 누적실현PnL - 누적수수료 + 누적입금 - 누적출금
+            est_asset = (self.initial_asset + cum_realized_pnl - cum_fees
+                         + cum_deposit - cum_withdrawal)
+            net_profit = est_asset - self.initial_asset - cum_deposit + cum_withdrawal
+            denom = self.initial_asset + cum_deposit
+            ret_pct = round((net_profit / denom) * 100, 4) if denom != 0 else 0.0
+
+            ev["cum_return_pct"] = ret_pct
+            ev["est_asset"] = round(est_asset, 2)
+
+        return events
+
     # ── 최근 1개월 거래 요약 ──
 
     def recent_trades_summary(self, days: int = 30) -> dict:

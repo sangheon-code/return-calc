@@ -229,58 +229,69 @@ if portfolio.closed_trades:
 
 st.divider()
 
-# ── 진행중인 거래 ──
-if portfolio.open_trades:
-    st.subheader("진행중인 거래")
-    open_data = []
-    for t in portfolio.open_trades:
-        open_data.append({
-            "거래일": t.entry_time.strftime("%m-%d %H:%M"),
-            "자산": t.asset,
-            "포지션": t.trade_type.value.upper(),
-            "레버리지": f"{t.leverage}x",
-            "평균매수가": t.entry_price,
-            "수량": t.quantity,
-            "수수료": f"${t.fee:.2f}",
-        })
-    st.dataframe(pd.DataFrame(open_data), use_container_width=True, hide_index=True)
+# ── 통합 타임라인 ──
+st.subheader("타임라인 (시간순)")
 
-# ── 마감된 거래 ──
-if portfolio.closed_trades:
-    st.subheader("마감된 거래")
-    closed_data = []
-    for t in portfolio.closed_trades:
-        period = ""
-        if t.entry_time and t.exit_time:
-            period = f"{t.entry_time.strftime('%m-%d %H:%M')} ~ {t.exit_time.strftime('%m-%d %H:%M')}"
-        closed_data.append({
-            "기간": period,
-            "자산": t.asset,
-            "포지션": t.trade_type.value.upper(),
-            "레버리지": f"{t.leverage}x",
-            "평균매수가": t.entry_price,
-            "평균매도가": t.exit_price,
-            "수량": t.quantity,
-            "수익금": f"${t.pnl_with_fee:,.2f}",
-            "수익률": f"{t.return_pct:+.4f}%",
-        })
-    df_closed = pd.DataFrame(closed_data)
-    st.dataframe(df_closed, use_container_width=True, hide_index=True)
+timeline = portfolio.timeline()
 
-# ── 입출금 내역 ──
-if portfolio.cash_flows:
-    st.subheader("입출금 내역")
-    cf_data = []
-    for cf in portfolio.cash_flows:
-        cf_data.append({
-            "날짜": cf.timestamp.strftime("%Y-%m-%d"),
-            "유형": "입금" if cf.amount > 0 else "출금",
-            "금액": f"${abs(cf.amount):,.2f}",
-            "메모": cf.description,
-        })
-    st.dataframe(pd.DataFrame(cf_data), use_container_width=True, hide_index=True)
+if timeline:
+    # 수익률 차트
+    times = [ev["time"] for ev in timeline]
+    returns = [ev["cum_return_pct"] for ev in timeline]
+    fig_line = go.Figure(data=[go.Scatter(
+        x=times, y=returns, mode="lines+markers",
+        line=dict(color="#4F8BF9", width=2),
+        marker=dict(size=6),
+        hovertemplate="%{x}<br>수익률: %{y:.4f}%<extra></extra>",
+    )])
+    fig_line.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+    fig_line.update_layout(
+        height=250, margin=dict(t=10, b=30, l=50, r=20),
+        yaxis_title="누적 수익률 (%)", xaxis_title="",
+    )
+    st.plotly_chart(fig_line, use_container_width=True)
 
-# ── 데이터 없을 때 안내 ──
-if not portfolio.trades and not portfolio.holdings:
-    st.divider()
+    # 타임라인 테이블 + 삭제 버튼
+    for row_idx, ev in enumerate(timeline):
+        src = ev["source"]
+        idx = ev["index"]
+        ret_color = "green" if ev["cum_return_pct"] >= 0 else "red"
+        ret_str = f"{ev['cum_return_pct']:+.4f}%"
+
+        col_time, col_type, col_desc, col_amt, col_ret, col_del = st.columns([2, 1.2, 3, 1.5, 1.5, 0.8])
+
+        with col_time:
+            st.text(ev["time"].strftime("%m-%d %H:%M"))
+        with col_type:
+            if "마감" in ev["type"]:
+                st.markdown(f":blue[{ev['type']}]")
+            elif "진행" in ev["type"]:
+                st.markdown(f":orange[{ev['type']}]")
+            elif ev["type"] == "입금":
+                st.markdown(f":green[{ev['type']}]")
+            else:
+                st.markdown(f":red[{ev['type']}]")
+        with col_desc:
+            desc = ev["desc"]
+            if ev["detail"]:
+                desc += f"  ({ev['detail']})"
+            st.text(desc)
+        with col_amt:
+            if ev["source"] == "trade" and ev["amount"] != 0:
+                st.text(f"${ev['amount']:+,.2f}")
+            elif ev["source"] == "cashflow":
+                st.text(f"${ev['amount']:+,.2f}")
+            else:
+                st.text("—")
+        with col_ret:
+            st.markdown(f":{ret_color}[{ret_str}]")
+        with col_del:
+            btn_key = f"del_{src}_{idx}_{row_idx}"
+            if st.button("✕", key=btn_key, help="삭제"):
+                if src == "trade":
+                    st.session_state.trades.pop(idx)
+                elif src == "cashflow":
+                    st.session_state.cash_flows.pop(idx)
+                st.rerun()
+else:
     st.info("👈 사이드바에서 거래, 입출금, 보유 자산을 추가하거나 **샘플 데이터**를 불러오세요.")
