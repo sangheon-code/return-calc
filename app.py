@@ -169,7 +169,7 @@ c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.metric("총 자산", f"$ {portfolio.total_asset_value:,.2f}")
 with c2:
-    st.metric("순이익", f"$ {portfolio.net_profit:,.2f}", delta=f"{portfolio.return_pct:+.2f}%")
+    st.metric("순이익", f"$ {portfolio.net_profit:,.2f}", delta=f"{portfolio.return_pct:+.4f}%")
 with c3:
     st.metric("총 실현 수익금", f"$ {portfolio.total_realized_pnl:,.2f}")
 with c4:
@@ -220,7 +220,7 @@ with col_stats:
     | 총 출금 | $ {portfolio.total_withdrawal:,.2f} |
     | 현재 자산 | $ {portfolio.total_asset_value:,.2f} |
     | 순이익 | $ {portfolio.net_profit:,.2f} |
-    | **수익률** | **{portfolio.return_pct:+.2f}%** |
+    | **수익률** | **{portfolio.return_pct:+.4f}%** |
     """)
 
 # 승률 프로그레스 바
@@ -262,7 +262,7 @@ if portfolio.closed_trades:
             "평균매도가": t.exit_price,
             "수량": t.quantity,
             "수익금": f"${t.pnl_with_fee:,.2f}",
-            "수익률": f"{t.return_pct:+.2f}%",
+            "수익률": f"{t.return_pct:+.4f}%",
         })
     df_closed = pd.DataFrame(closed_data)
     st.dataframe(df_closed, use_container_width=True, hide_index=True)

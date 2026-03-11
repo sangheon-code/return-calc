@@ -212,7 +212,7 @@ class Portfolio:
         denominator = self.initial_asset + self.total_deposit
         if denominator == 0:
             return 0.0
-        return round((self.net_profit / denominator) * 100, 2)
+        return round((self.net_profit / denominator) * 100, 4)
 
     # ── 최근 1개월 거래 요약 ──
 
