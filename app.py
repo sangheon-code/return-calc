@@ -64,7 +64,8 @@ with st.sidebar:
         with t_col2:
             t_status = st.selectbox("상태", ["진행중 (OPEN)", "마감 (CLOSED)"])
             t_exit = st.number_input("평균 매도가", min_value=0.0, value=0.0, format="%f")
-            t_fee = st.number_input("수수료 (USDT)", min_value=0.0, value=0.0, format="%f")
+            t_entry_fee = st.number_input("매수 수수료 (USDT)", min_value=0.0, value=0.0, format="%f")
+            t_exit_fee = st.number_input("매도 수수료 (USDT)", min_value=0.0, value=0.0, format="%f")
 
         t_date_col1, t_date_col2 = st.columns(2)
         with t_date_col1:
@@ -88,7 +89,8 @@ with st.sidebar:
                 leverage=t_lev,
                 exit_price=t_exit if is_closed and t_exit > 0 else None,
                 exit_time=exit_dt,
-                fee=t_fee,
+                entry_fee=t_entry_fee,
+                exit_fee=t_exit_fee,
                 status=TradeStatus.CLOSED if is_closed else TradeStatus.OPEN,
             )
             st.session_state.trades.append(trade)
@@ -141,12 +143,12 @@ with st.sidebar:
     if st.button("📋 샘플 데이터 불러오기", use_container_width=True):
         st.session_state.initial_asset = 1000.0
         st.session_state.trades = [
-            Trade("LAUSDT", TradeType.LONG, 0.223557, 8800, datetime(2025, 3, 7, 22, 24), 20, 0.244086, datetime(2025, 3, 11, 15, 42), 2.0, TradeStatus.CLOSED),
-            Trade("PEOPLEUSDT", TradeType.LONG, 0.0068461, 282800, datetime(2025, 3, 7, 22, 18), 20, 0.007556, datetime(2025, 3, 9, 22, 48), 2.0, TradeStatus.CLOSED),
-            Trade("TAOUSDT", TradeType.LONG, 182.5, 5.54, datetime(2025, 3, 7, 22, 19), 20, 193.8, datetime(2025, 3, 9, 12, 38), 0.5, TradeStatus.CLOSED),
-            Trade("LAUSDT", TradeType.LONG, 0.2281, 670, datetime(2025, 3, 7, 22, 19), 20, 0.2289, datetime(2025, 3, 7, 22, 25), 0.15, TradeStatus.CLOSED),
-            Trade("TRBUSDT", TradeType.LONG, 15.03, 132.6, datetime(2025, 3, 9, 20, 10), 20, fee=2.0, status=TradeStatus.OPEN),
-            Trade("BTCUSDT", TradeType.LONG, 87920.1, 0.0297, datetime(2025, 3, 7, 19, 51), 20, fee=2.5, status=TradeStatus.OPEN),
+            Trade("LAUSDT", TradeType.LONG, 0.223557, 8800, datetime(2025, 3, 7, 22, 24), 20, 0.244086, datetime(2025, 3, 11, 15, 42), 1.0, 1.0, TradeStatus.CLOSED),
+            Trade("PEOPLEUSDT", TradeType.LONG, 0.0068461, 282800, datetime(2025, 3, 7, 22, 18), 20, 0.007556, datetime(2025, 3, 9, 22, 48), 1.0, 1.0, TradeStatus.CLOSED),
+            Trade("TAOUSDT", TradeType.LONG, 182.5, 5.54, datetime(2025, 3, 7, 22, 19), 20, 193.8, datetime(2025, 3, 9, 12, 38), 0.25, 0.25, TradeStatus.CLOSED),
+            Trade("LAUSDT", TradeType.LONG, 0.2281, 670, datetime(2025, 3, 7, 22, 19), 20, 0.2289, datetime(2025, 3, 7, 22, 25), 0.075, 0.075, TradeStatus.CLOSED),
+            Trade("TRBUSDT", TradeType.LONG, 15.03, 132.6, datetime(2025, 3, 9, 20, 10), 20, entry_fee=1.0, exit_fee=1.0, status=TradeStatus.OPEN),
+            Trade("BTCUSDT", TradeType.LONG, 87920.1, 0.0297, datetime(2025, 3, 7, 19, 51), 20, entry_fee=1.25, exit_fee=1.25, status=TradeStatus.OPEN),
         ]
         st.session_state.holdings = [
             Holdings("USDT", 791.37, 791.37),

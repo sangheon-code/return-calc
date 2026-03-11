@@ -35,8 +35,14 @@ class Trade:
     leverage: int = 20            # 레버리지
     exit_price: Optional[float] = None   # 평균 매도가 (마감 시)
     exit_time: Optional[datetime] = None # 청산 시간
-    fee: float = 0.0              # 수수료
+    entry_fee: float = 0.0        # 매수 수수료
+    exit_fee: float = 0.0         # 매도 수수료
     status: TradeStatus = TradeStatus.OPEN
+
+    @property
+    def fee(self) -> float:
+        """총 수수료 (매수 + 매도)"""
+        return self.entry_fee + self.exit_fee
 
     @property
     def is_closed(self) -> bool:
@@ -403,7 +409,8 @@ if __name__ == "__main__":
         entry_time=datetime(2025, 3, 7, 22, 24),
         exit_time=datetime(2025, 3, 11, 15, 42),
         leverage=20,
-        fee=2.0,
+        entry_fee=1.0,
+        exit_fee=1.0,
         status=TradeStatus.CLOSED,
     ))
 
@@ -417,7 +424,8 @@ if __name__ == "__main__":
         entry_time=datetime(2025, 3, 7, 22, 18),
         exit_time=datetime(2025, 3, 9, 22, 48),
         leverage=20,
-        fee=2.0,
+        entry_fee=1.0,
+        exit_fee=1.0,
         status=TradeStatus.CLOSED,
     ))
 
@@ -431,7 +439,8 @@ if __name__ == "__main__":
         entry_time=datetime(2025, 3, 7, 22, 19),
         exit_time=datetime(2025, 3, 9, 12, 38),
         leverage=20,
-        fee=0.5,
+        entry_fee=0.25,
+        exit_fee=0.25,
         status=TradeStatus.CLOSED,
     ))
 
@@ -445,7 +454,8 @@ if __name__ == "__main__":
         entry_time=datetime(2025, 3, 7, 22, 19),
         exit_time=datetime(2025, 3, 7, 22, 25),
         leverage=20,
-        fee=0.15,
+        entry_fee=0.075,
+        exit_fee=0.075,
         status=TradeStatus.CLOSED,
     ))
 
@@ -459,7 +469,8 @@ if __name__ == "__main__":
         quantity=132.6,
         entry_time=datetime(2025, 3, 9, 20, 10),
         leverage=20,
-        fee=2.0,
+        entry_fee=1.0,
+        exit_fee=1.0,
         status=TradeStatus.OPEN,
     ))
 
@@ -471,7 +482,8 @@ if __name__ == "__main__":
         quantity=0.0297,
         entry_time=datetime(2025, 3, 7, 19, 51),
         leverage=20,
-        fee=2.5,
+        entry_fee=1.25,
+        exit_fee=1.25,
         status=TradeStatus.OPEN,
     ))
 
