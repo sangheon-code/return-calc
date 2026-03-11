@@ -8,10 +8,17 @@
 - 총 출금 = 대회 기간 총 출금액 + 현물 매수액
 """
 
+import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+
+
+def truncate(value: float, decimals: int) -> float:
+    """소수점 이하 버림 (반올림 아님)"""
+    factor = 10 ** decimals
+    return math.trunc(value * factor) / factor
 
 
 class TradeType(Enum):
@@ -180,7 +187,7 @@ class Portfolio:
     @property
     def total_realized_pnl(self) -> float:
         """총 실현 수익금"""
-        return round(sum(t.pnl_with_fee for t in self.closed_trades), 2)
+        return truncate(sum(t.pnl_with_fee for t in self.closed_trades), 2)
 
     @property
     def total_fees(self) -> float:
@@ -314,7 +321,7 @@ class Portfolio:
         total = len(recent)
 
         return {
-            "총 실현 수익금": round(pnl, 2),
+            "총 실현 수익금": truncate(pnl, 2),
             "총 지불 수수료": round(-fees, 2),
             "수익": wins,
             "손실": losses,
